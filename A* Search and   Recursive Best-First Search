@@ -1,0 +1,202 @@
+import heapq  # For using a priority queue (min-heap) 
+ 
+# Romania Map: Each city maps to its neighbors and the distance to them 
+romania_map = { 
+    'Arad': {'Zerind': 75, 'Sibiu': 140, 'Timisoara': 118}, 
+    'Zerind': {'Arad': 75, 'Oradea': 71}, 
+    'Oradea': {'Zerind': 71, 'Sibiu': 151}, 
+    'Sibiu': {'Arad': 140, 'Oradea': 151, 'Fagaras': 99, 'Rimnicu Vilcea': 80}, 
+    'Timisoara': {'Arad': 118, 'Lugoj': 111}, 
+    'Lugoj': {'Timisoara': 111, 'Mehadia': 70}, 
+    'Mehadia': {'Lugoj': 70, 'Dobreta': 75}, 
+    'Dobreta': {'Mehadia': 75, 'Craiova': 120}, 
+    'Craiova': {'Dobreta': 120, 'Rimnicu Vilcea': 146, 'Pitesti': 138}, 
+    'Rimnicu Vilcea': {'Sibiu': 80, 'Craiova': 146, 'Pitesti': 97}, 
+    'Fagaras': {'Sibiu': 99, 'Bucharest': 211}, 
+    'Pitesti': {'Rimnicu Vilcea': 97, 'Craiova': 138, 'Bucharest': 101}, 
+    'Bucharest': {'Fagaras': 211, 'Pitesti': 101, 'Giurgiu': 90, 'Urziceni': 85}, 
+    'Giurgiu': {'Bucharest': 90}, 
+    'Urziceni': {'Bucharest': 85, 'Hirsova': 98, 'Vaslui': 142}, 
+    'Hirsova': {'Urziceni': 98, 'Eforie': 86}, 
+    'Eforie': {'Hirsova': 86}, 
+    'Vaslui': {'Urziceni': 142, 'Iasi': 92}, 
+    'Iasi': {'Vaslui': 92, 'Neamt': 87}, 
+    'Neamt': {'Iasi': 87} 
+} 
+ 
+# Heuristic: Straight-line distance from each city to Bucharest 
+heuristic = { 
+    'Arad': 366, 'Bucharest': 0, 'Craiova': 160, 'Dobreta': 242, 'Eforie': 161, 
+    'Fagaras': 178, 'Giurgiu': 77, 'Hirsova': 151, 'Iasi': 226, 'Lugoj': 244, 
+    'Mehadia': 241, 'Neamt': 234, 'Oradea': 380, 'Pitesti': 98, 'Rimnicu Vilcea': 193, 
+    'Sibiu': 253, 'Timisoara': 329, 'Urziceni': 80, 'Vaslui': 199, 'Zerind': 374 
+} 
+ 
+# Node class to represent each city in the search 
+class Node: 
+    def __init__(self, city, parent=None, g=0, h=0): 
+        self.city = city            # Current city name 
+        self.parent = parent        # Parent node (used to trace back the path) 
+        self.g = g                  # Cost from start to this city 
+        self.h = h                  # Heuristic cost to goal 
+        self.f = g + h              # Total cost = actual + estimated 
+ 
+    def __lt__(self, other): 
+        return self.f < other.f    # Needed for heapq to compare nodes by f value 
+ 
+# A* search function 
+def a_star_search(start, goal): 
+    open_list = []  # Cities to explore (priority queue) 
+    heapq.heappush(open_list, Node(start, None, 0, heuristic[start]))  # Add start node 
+    closed_set = set()  # Cities already explored 
+ 
+    while open_list: 
+        current = heapq.heappop(open_list)  # Get the city with lowest f cost 
+ 
+        if current.city == goal:  # If goal is reached 
+            path = [] 
+            total_cost = current.g 
+            while current: 
+                path.append(current.city)  # Trace back path from goal to start 
+                current = current.parent 
+            return path[::-1], total_cost  # Return reversed path and total cost 
+ 
+        closed_set.add(current.city)  # Mark current city as visited 
+ 
+        # Explore each neighbor of current city 
+        for neighbor, cost in romania_map[current.city].items():
+            if neighbor in closed_set: 
+                continue  # Skip if already visited 
+ 
+            g = current.g + cost      # New cost from start to neighbor 
+            h = heuristic[neighbor]   # Heuristic to goal from neighbor 
+            neighbor_node = Node(neighbor, current, g, h)  # Create new node 
+ 
+            # Check if neighbor is already in open_list with better f 
+            skip = False 
+            for node in open_list: 
+                if node.city == neighbor and node.f <= neighbor_node.f: 
+                    skip = True 
+                    break 
+ 
+            if not skip: 
+                heapq.heappush(open_list, neighbor_node)  # Add neighbor to queue 
+ 
+    return None, float('inf')  # If goal not reachable 
+ 
+# Main program: Find path from Arad to Bucharest 
+if __name__ == "__main__": 
+    start_city = "Arad" 
+    goal_city = "Bucharest" 
+    path, cost = a_star_search(start_city, goal_city) 
+ 
+    if path: 
+        print("Path found:") 
+        print(" -> ".join(path))     # Display path step-by-step 
+        print("Total cost:", cost)   # Display total distance 
+    else: 
+        print("No path found.")
+
+
+ # Recursive Best-First Search algorithm: 
+
+
+import math 
+ 
+# Heuristic: straight-line distance to Bucharest (used as h(n)) 
+heuristics = { 
+    'Arad': 366, 'Zerind': 374, 'Oradea': 380, 'Sibiu': 253, 'Timisoara': 329, 
+    'Lugoj': 244, 'Mehadia': 241, 'Drobeta': 242, 'Craiova': 160, 'Rimnicu Vilcea': 
+193, 
+    'Fagaras': 178, 'Pitesti': 98, 'Bucharest': 0, 'Giurgiu': 77, 'Urziceni': 80, 
+    'Hirsova': 151, 'Eforie': 161, 'Vaslui': 199, 'Iasi': 226, 'Neamt': 234 
+} 
+ 
+# Graph: roads with costs between cities 
+romania_map = { 
+    'Arad': {'Zerind': 75, 'Timisoara': 118, 'Sibiu': 140}, 
+    'Zerind': {'Arad': 75, 'Oradea': 71}, 
+    'Oradea': {'Zerind': 71, 'Sibiu': 151}, 
+    'Sibiu': {'Arad': 140, 'Oradea': 151, 'Fagaras': 99, 'Rimnicu Vilcea': 80}, 
+    'Timisoara': {'Arad': 118, 'Lugoj': 111}, 
+    'Lugoj': {'Timisoara': 111, 'Mehadia': 70}, 
+    'Mehadia': {'Lugoj': 70, 'Drobeta': 75}, 
+    'Drobeta': {'Mehadia': 75, 'Craiova': 120}, 
+    'Craiova': {'Drobeta': 120, 'Rimnicu Vilcea': 146, 'Pitesti': 138}, 
+    'Rimnicu Vilcea': {'Sibiu': 80, 'Craiova': 146, 'Pitesti': 97}, 
+    'Fagaras': {'Sibiu': 99, 'Bucharest': 211}, 
+    'Pitesti': {'Rimnicu Vilcea': 97, 'Craiova': 138, 'Bucharest': 101}, 
+    'Bucharest': {'Fagaras': 211, 'Pitesti': 101, 'Giurgiu': 90, 'Urziceni': 85}, 
+    'Giurgiu': {'Bucharest': 90}, 
+    'Urziceni': {'Bucharest': 85, 'Hirsova': 98, 'Vaslui': 142}, 
+    'Hirsova': {'Urziceni': 98, 'Eforie': 86}, 
+    'Eforie': {'Hirsova': 86}, 
+    'Vaslui': {'Urziceni': 142, 'Iasi': 92}, 
+    'Iasi': {'Vaslui': 92, 'Neamt': 87}, 
+    'Neamt': {'Iasi': 87} 
+} 
+ 
+# Node class for RBFS 
+class Node: 
+    def __init__(self, city, parent=None, g=0): 
+        self.city = city 
+        self.parent = parent 
+        self.g = g  # Cost from start to this node 
+        self.h = heuristics[city] 
+        self.f = max(self.g + self.h, getattr(parent, 'f', 0)) 
+ 
+# Recursive Best-First Search 
+def rbfs(node, goal, f_limit): 
+    print(f"Visiting {node.city}, f={node.f}, limit={f_limit}") 
+ 
+    if node.city == goal: 
+        return node, 0 
+ 
+    successors = [] 
+    for neighbor, cost in romania_map[node.city].items(): 
+        if node.parent and neighbor == node.parent.city: 
+            continue  # Avoid going back to parent 
+ 
+        g = node.g + cost 
+        child = Node(neighbor, parent=node, g=g) 
+        successors.append(child) 
+ 
+    if not successors: 
+        return None, math.inf 
+ 
+    while True: 
+        successors.sort(key=lambda x: x.f) 
+        best = successors[0] 
+ 
+        if best.f > f_limit: 
+            return None, best.f 
+ 
+        alternative = successors[1].f if len(successors) > 1 else math.inf 
+ 
+        result, best.f = rbfs(best, goal, min(f_limit, alternative)) 
+ 
+        if result is not None: 
+            return result, best.f
+# Trace path from goal to start 
+def extract_path(node): 
+    path = [] 
+    while node: 
+        path.append(node.city) 
+        node = node.parent 
+    return path[::-1] 
+ 
+# Main 
+if __name__ == "__main__": 
+    start = 'Arad' 
+    goal = 'Bucharest' 
+ 
+    start_node = Node(start) 
+    result, _ = rbfs(start_node, goal, math.inf) 
+ 
+    if result: 
+        path = extract_path(result) 
+        print("\nPath found:") 
+        print(" -> ".join(path)) 
+        print("Total cost:", result.g) 
+    else: 
+        print("No path found.")
